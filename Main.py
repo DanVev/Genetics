@@ -3,16 +3,26 @@ import itertools as it
 
 NUMBER_OF_ITEMS = 15
 NUMBER_OF_ITERATIONS = 10
-WEIGHT = 50
+WEIGHT = rn.randint(40, 60)
 MUTATION_PROBABILITY = 0.01
 weight_list = [rn.randint(1, 10) for i in range(NUMBER_OF_ITEMS)]
 cost_list = [rn.randint(1, 10) for i in range(NUMBER_OF_ITEMS)]
-POP_SIZE = 65
+POP_SIZE = 75
 EXP_NUMBER = 1
+RECREATION_NUMBER = 30
+
+
+def decode(code):
+    while WEIGHT < weight(code):
+        code[(min([(i, cost_list[i]) for i in range(NUMBER_OF_ITEMS) if code[i] != 0], key=lambda x: x[1])[0])] = 0
 
 
 def p(ver):
     return ver >= rn.random()
+
+
+def weight(code):
+    return sum(map(lambda x, y: x * y, code, weight_list))
 
 
 def criteria(code):
@@ -32,7 +42,7 @@ def initialize_1(_pop_size):
     for i in range(_pop_size):
         code = [0] * NUMBER_OF_ITEMS
         for pos in range(NUMBER_OF_ITEMS):
-            if sum(map(lambda x, y: x * y, code, weight_list)) < WEIGHT + weight_list[pos]:
+            if weight(code) < WEIGHT + weight_list[pos]:
                 code[pos] = rn.randint(0, 1)
         pop.append(code)
     return pop
@@ -45,7 +55,7 @@ def initialize_2(_pop_size):
         code = [0] * NUMBER_OF_ITEMS
         for i in range(5):
             for pos in range(NUMBER_OF_ITEMS):
-                if sum(map(lambda x, y: x * y, code, weight_list)) < WEIGHT + weight_list[pos] and p(
+                if weight(code) < WEIGHT + weight_list[pos] and p(
                                 cost_list[pos] / cost_sum):
                     code[pos] = 1
             pop.append(code)
@@ -80,7 +90,7 @@ def mutate1(population):
     while True:
         position = rn.randint(0, len(code) - 1)
         code[position] = 1 - code[position]
-        if sum(map(lambda x, y: x * y, code, weight_list)) > WEIGHT:
+        if weight(code) > WEIGHT:
             code[position] = 1 - code[position]
         else:
             break
@@ -109,25 +119,39 @@ def selection2(_population):
             _population.pop(index2)
 
 
+def selection3(_population):
+    while len(_population) != POP_SIZE:
+        index1, index2 = rn.randint(0, len(_population) - 1), rn.randint(0, len(_population) - 1)
+        if criteria(_population[index1]) > criteria((_population[index2])):
+            _population.pop(index2)
+        else:
+            _population.pop(index1)
+
+
 for initialize in initialize_1, initialize_2:
     for select_pairs in select_pairs1, select_pairs2:
         for mutate in mutate1,:
             for crossover in crossover1, crossover2:
-                for selection in selection1, selection2:
+                for selection in selection1, selection2, selection3,:
                     for exp_number in range(EXP_NUMBER):
-                        print("Начальная популяция " + str(initialize), "Выбор пары: " + str(select_pairs),
-                              "Кроссовер: " + str(crossover), "Селекция: " + str(selection), sep="\n")
+                        print("Начальная популяция " + str(initialize.__name__),
+                              "Выбор пары: " + str(select_pairs.__name__),
+                              "Кроссовер: " + str(crossover.__name__), "Селекция: " + str(selection.__name__), sep="\n")
                         population = initialize(POP_SIZE)
                         for step_number in range(1, NUMBER_OF_ITERATIONS + 1):
                             for code in population:
                                 assert len(code) == 15
 
                             # recreation stage
-                            for pair in select_pairs(population, rn.randint(10, 15)):
+                            for pair in select_pairs(population,
+                                                     rn.randint(RECREATION_NUMBER - 5, RECREATION_NUMBER + 5)):
                                 population.append(crossover(pair))
                             # mutation stage
                             if p(MUTATION_PROBABILITY):
                                 mutate(population)
+                            # decoding stage
+                            for code in population:
+                                decode(code)
                             # selection stage
                             selection(population)
                             # output stage
