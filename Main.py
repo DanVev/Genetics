@@ -8,7 +8,7 @@ MUTATION_PROBABILITY = 0.01
 weight_list = [rn.randint(1, 10) for i in range(NUMBER_OF_ITEMS)]
 cost_list = [rn.randint(1, 10) for i in range(NUMBER_OF_ITEMS)]
 POP_SIZE = 75
-EXP_NUMBER = 1
+EXP_NUMBER = 5
 RECREATION_NUMBER = 30
 
 
@@ -97,6 +97,13 @@ def mutate1(population):
     population[index] = code
 
 
+def mutate2(population):
+    index = rn.randint(0, len(population) - 1)
+    code = population[index]
+    pos1, pos2 = rn.randint(0, NUMBER_OF_ITEMS - 1), rn.randint(0, NUMBER_OF_ITEMS - 1)
+    code[pos1], code[pos2] = code[pos2], code[pos1]
+
+
 def selection1(_population):
     crit_list = [criteria(code) for code in _population]
     crit_sum = sum(crit_list)
@@ -113,6 +120,10 @@ def selection2(_population):
         index1, index2 = rn.randint(0, len(_population) - 1), rn.randint(0, len(_population) - 1)
         crit1, crit2 = criteria(_population[index1]), criteria(_population[index2])
         crit_sum = crit1 + crit2
+        if not crit_sum:
+            crit1 = 1
+            crit2 = 1
+            crit_sum = 2
         if p(1 - crit1 / crit_sum):
             _population.pop(index1)
         elif p(1 - crit2 / crit_sum):
@@ -130,13 +141,15 @@ def selection3(_population):
 
 for initialize in initialize_1, initialize_2:
     for select_pairs in select_pairs1, select_pairs2:
-        for mutate in mutate1,:
+        for mutate in mutate1, mutate2:
             for crossover in crossover1, crossover2:
-                for selection in selection1, selection2, selection3,:
+                for selection in selection1, selection2, selection3:
+                    exp_results = []
+                    print("Начальная популяция " + str(initialize.__name__),
+                          "Выбор пары: " + str(select_pairs.__name__),
+                          "Кроссовер: " + str(crossover.__name__), "Селекция: " + str(selection.__name__), sep="\n")
                     for exp_number in range(EXP_NUMBER):
-                        print("Начальная популяция " + str(initialize.__name__),
-                              "Выбор пары: " + str(select_pairs.__name__),
-                              "Кроссовер: " + str(crossover.__name__), "Селекция: " + str(selection.__name__), sep="\n")
+                        stage_results = []
                         population = initialize(POP_SIZE)
                         for step_number in range(1, NUMBER_OF_ITERATIONS + 1):
                             for code in population:
@@ -155,5 +168,8 @@ for initialize in initialize_1, initialize_2:
                             # selection stage
                             selection(population)
                             # output stage
-                            print("Локальный максимум на этапе {} равен {}".format(step_number, criteria(
-                                max(population, key=criteria))))
+                            stage_results.append(criteria(max(population, key=criteria)))
+                            # print("Локальный максимум на этапе {} равен {}".format(step_number, criteria(
+                            #    max(population, key=criteria))))
+                        exp_results.append((stage_results[-1] - stage_results[0]) / stage_results[0])
+                    print(" ".join([str(int(100 * x)) + "%" for x in exp_results]))
